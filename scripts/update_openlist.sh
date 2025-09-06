@@ -152,3 +152,4 @@ chmod +x "${INSTALL_PATH}"
 rm -f "${TARBALL}"
 
 echo "✨ 搞定啦喵！OpenList 已经成功变成最新版 ${LATEST_TAG} (${ARCH}) 啦！现在它在 ${INSTALL_PATH} 安家了喵！主人快夸我喵~ (ɔˆ ³(ˆ⌣ˆc)"
+
