@@ -137,7 +137,19 @@ fi
 
 # --- 下载和安装时间到喵！---
 
-echo "找到啦喵！正在为主人下载版本 ${LATEST_TAG} (${ARCHIVE_NAME})... 请稍等一下喵~"
+echo "找到啦喵！最新版本是 ${LATEST_TAG} (对应文件：${ARCHIVE_NAME})"
+
+# Windows 系统：打印下载链接，让主人手动下载
+if [[ "${OS_NAME}" == "windows" ]]; then
+    echo -e "\n(^・ω・^ ) 检测到 Windows 系统，为您提供手动下载链接："
+    echo "📥 下载地址：${DOWNLOAD_URL}"
+    echo -e "\n请主人复制链接到浏览器下载，下载后解压到当前目录即可使用哦喵！"
+    # 跳过自动下载/安装，直接结束（保持与原逻辑中“留在当前目录”的一致）
+    exit 0
+fi
+
+# 非 Windows 系统（Linux/Darwin）：继续自动下载（用 curl 替代原 wget，避免依赖问题）
+echo "正在为主人自动下载，请稍等一下喵~"
 curl -sL -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
 
 # 检查文件下载好了没有喵
@@ -151,15 +163,9 @@ TMP_DIR=$(mktemp -d)
 trap "rm -rf ${TMP_DIR}" EXIT 
 
 echo "嘿咻嘿咻... 正在解压和安装喵..."
-if [[ "${OS_NAME}" == "windows" ]]; then
-    unzip -q "${ARCHIVE_NAME}" -d "${TMP_DIR}"
-    # 在窗户系统上，二进制文件可能叫 openlist.exe 喵
-    BINARY_NAME="openlist.exe" 
-else
-    tar -zxf "${ARCHIVE_NAME}" -C "${TMP_DIR}"
-    BINARY_NAME="openlist"
-fi
-
+# 非 Windows 系统仅需处理 tar.gz 解压（Windows 已提前退出）
+tar -zxf "${ARCHIVE_NAME}" -C "${TMP_DIR}"
+BINARY_NAME="openlist"
 
 BINARY_PATH=$(find "${TMP_DIR}" -type f -name "${BINARY_NAME}")
 if [[ -z "${BINARY_PATH}" ]]; then
@@ -167,13 +173,8 @@ if [[ -z "${BINARY_PATH}" ]]; then
     exit 1
 fi
 
-# 如果是窗户系统，就放到当前目录，否则放到 INSTALL_DIR 喵
-if [[ "${OS_NAME}" == "windows" ]]; then
-    INSTALL_PATH="${INSTALL_DIR}/${BINARY_NAME}"
-else
-    INSTALL_PATH="${INSTALL_DIR}/openlist"
-fi
-
+# 非 Windows 系统：放到指定安装目录
+INSTALL_PATH="${INSTALL_DIR}/openlist"
 echo "马上就好喵！正在把文件放到 ${INSTALL_PATH} 这里喵~"
 mv -f "${BINARY_PATH}" "${INSTALL_PATH}"
 chmod +x "${INSTALL_PATH}"
