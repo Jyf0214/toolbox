@@ -30,7 +30,7 @@ jobs:
         # 这个神奇的工具可以帮我们找到被修改过的文件喵
         id: get_changed_scripts
         if: github.event_name == 'push' # 只在 push 事件时运行这一步
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: scripts/**.sh
 
