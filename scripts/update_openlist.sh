@@ -52,6 +52,8 @@ INSTALL_DIR="/usr/local/bin" # 默认安装到这里喵~
 
 if [[ -n "$PREFIX" ]] && [[ -d "$PREFIX/bin" ]]; then
     echo "(´,,•ω•,,｀)♡ 是 Termux 喵~ 正在用 pkg 帮主人安装小工具喵..."
+    OS_NAME="android"  # 调整为 Android 环境喵~
+    echo "ฅ(๑>◡<๑)ฅ 人家发现是 Android 喵，调整系统类型为 android 喵！"
     INSTALL_DIR="$PREFIX/bin"
     pkg install -y curl jq wget file >/dev/null
 else # 标准的小企鹅系统喵
@@ -77,7 +79,12 @@ if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
 fi
 
 # 像这样拼一个文件名出来喵 "linux-amd64"
-TARGET_PATTERN="${OS_NAME}-${ARCH}"
+if [[ "$OS_NAME" == "linux" ]]; then
+    TARGET_PATTERN="linux-musl-${ARCH}"
+    echo "(^・ω・^ ) 对于标准小企鹅系统，人家用 musl 版本，会更兼容哦喵~"
+else
+    TARGET_PATTERN="${OS_NAME}-${ARCH}"
+fi
 DOWNLOAD_URL=""
 TARBALL=""
 
