@@ -1,52 +1,101 @@
 name: 自动测试所有小脚本喵~ 🐾
 
 on:
+  # 当主人推送到 main 分支时，人家就会自动开始工作喵！
   push:
     branches: [ "main", "master" ]
     paths:
-      - 'scripts/**.sh'
+      - 'scripts/**.sh' # 只有 scripts 目录里的脚本变化了才触发喵
 
+  # 也给主人一个手动运行的按钮喵，想什么时候跑就什么时候跑~
   workflow_dispatch:
 
 jobs:
+  # 第一个工作：侦察兵出动！去发现所有需要运行的脚本喵
   discover-scripts:
     name: 发现所有要运行的小脚本喵 🧐
     runs-on: ubuntu-latest
     outputs:
+      # 把找到的脚本列表（JSON格式）报告给下一个工作喵
       script_matrix: ${{ steps.set-matrix.outputs.scripts }}
 
     steps:
       - name: 先把主人的代码拿过来喵～
         uses: actions/checkout@v4
+        # 需要获取历史记录才能比较文件的变化喵
+        with:
+          fetch-depth: 2
 
-      - name: 看看 scripts 文件夹里都有谁喵...
+      - name: 寻找发生变化的脚本文件喵 (仅在推送时)
+        # 这个神奇的工具可以帮我们找到被修改过的文件喵
+        id: get_changed_scripts
+        if: github.event_name == 'push' # 只在 push 事件时运行这一步
+        uses: tj-actions/changed-files@v44
+        with:
+          files: scripts/**.sh
+
+      - name: 确定最终要运行的脚本列表喵...
         id: set-matrix
         run: |
-          scripts=$(ls -1 scripts/*.sh 2>/dev/null | jq -R . | jq -s -c .)
-          echo "发现的脚本有: $scripts 喵"
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # 如果是推送事件，就只运行变化的脚本喵
+            echo "是推送事件，正在寻找变化的脚本喵..."
+            scripts_list="${{ steps.get_changed_scripts.outputs.all_changed_files }}"
+            if [[ -z "$scripts_list" ]]; then
+              echo "没有检测到任何脚本文件变化喵~ 本次不运行任何脚本。"
+              scripts="[]"
+            else
+              # 把空格分隔的文件列表变成紧凑的 JSON 数组
+              echo "找到这些变化的脚本: $scripts_list"
+              scripts=$(echo "$scripts_list" | tr ' ' '\n' | jq -R . | jq -s -c .)
+            fi
+          else
+            # 如果是手动运行，就运行所有的脚本喵
+            echo "是手动运行，正在寻找所有脚本喵..."
+            scripts=$(ls -1 scripts/*.sh 2>/dev/null | jq -R . | jq -s -c .)
+          fi
+          echo "最终确定的脚本列表是: $scripts 喵"
           echo "scripts=$scripts" >> $GITHUB_OUTPUT
 
-  run-scripts:
+  # 第二个工作：Linux 执行官出动！
+  run-scripts-linux:
     needs: discover-scripts
     if: needs.discover-scripts.outputs.script_matrix != '[]'
-    name: 正在努力执行 -> ${{ matrix.script_name }} 喵! 🚀
+    name: 在小企鹅上执行 -> ${{ matrix.script_name }} 喵! 🐧
     continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
         script_name: ${{ fromJson(needs.discover-scripts.outputs.script_matrix) }}
-
     runs-on: ubuntu-latest
-
     steps:
       - name: 再次把主人的代码拿过来喵～
         uses: actions/checkout@v4
-
       - name: 赋予魔法力量并以 root 身份开始执行喵！✨
         run: |
-          echo "正在给 ${{ matrix.script_name }} 注入执行的魔法力量 (chmod +x) 喵..."
           chmod +x ${{ matrix.script_name }}
-          
-          echo "开始使用 root 的魔法力量执行 ${{ matrix.script_name }} 喵！加油喵！"
-          # 脚本需要 root 权限，所以我们在它前面加上 sudo 喵
+          echo "开始使用 root 的魔法力量执行 ${{ matrix.script_name }} 喵！"
           sudo ./${{ matrix.script_name }}
+
+  # 第三个工作：Windows 执行官也出动了！
+  run-scripts-windows:
+    needs: discover-scripts
+    if: needs.discover-scripts.outputs.script_matrix != '[]'
+    name: 在窗户上执行 -> ${{ matrix.script_name }} 喵! 🪟
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        script_name: ${{ fromJson(needs.discover-scripts.outputs.script_matrix) }}
+    runs-on: windows-latest
+    steps:
+      - name: 再次把主人的代码拿过来喵～
+        uses: actions/checkout@v4
+      - name: 赋予魔法力量并开始执行喵！✨
+        # 在 Windows 上，我们用 Bash 来运行脚本喵
+        shell: bash
+        run: |
+          chmod +x ${{ matrix.script_name }}
+          echo "开始执行 ${{ matrix.script_name }} 喵！"
+          # Windows上没有 sudo，所以直接运行喵
+          ./${{ matrix.script_name }}
