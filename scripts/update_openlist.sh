@@ -52,8 +52,6 @@ INSTALL_DIR="/usr/local/bin" # 默认安装到这里喵~
 
 if [[ -n "$PREFIX" ]] && [[ -d "$PREFIX/bin" ]]; then
     echo "(´,,•ω•,,｀)♡ 是 Termux 喵~ 正在用 pkg 帮主人安装小工具喵..."
-    OS_NAME="android"  # 调整为 Android 环境喵~
-    echo "ฅ(๑>◡<๑)ฅ 人家发现是 Android 喵，调整系统类型为 android 喵！"
     INSTALL_DIR="$PREFIX/bin"
     pkg install -y curl jq wget file >/dev/null
 else # 标准的小企鹅系统喵
@@ -63,7 +61,7 @@ else # 标准的小企鹅系统喵
     fi
     echo "是可爱的小企鹅系统喵~ 正在用 apt-get 帮主人安装小工具喵..."
     cd /tmp
-    apt-get update >/dev/null && apt-get install -y curl jq wget file >/dev/null
+    apt-get update >/dev/null && apt-get install -y apt-utils curl jq wget file >/dev/null  # 添加 apt-utils 以避免 debconf 警告
 fi
 
 # --- 努力帮主人寻找最新的下载链接喵 ---
@@ -79,12 +77,7 @@ if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
 fi
 
 # 像这样拼一个文件名出来喵 "linux-amd64"
-if [[ "$OS_NAME" == "linux" ]]; then
-    TARGET_PATTERN="linux-musl-${ARCH}"
-    echo "(^・ω・^ ) 对于标准小企鹅系统，人家用 musl 版本，会更兼容哦喵~"
-else
-    TARGET_PATTERN="${OS_NAME}-${ARCH}"
-fi
+TARGET_PATTERN="${OS_NAME}-${ARCH}"
 DOWNLOAD_URL=""
 TARBALL=""
 
@@ -107,8 +100,21 @@ if [[ -z "$DOWNLOAD_URL" ]]; then
     if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
         TARBALL="openlist-${STANDARD_SUFFIX}"
     else
-        echo "Σ(っ °Д °;)っ 呜呜...人家尽力了，但还是找不到适合 (${TARGET_PATTERN}) 的下载链接喵... 对不起主人喵..." >&2
-        exit 1
+        # 尝试 musl 版本，如果是 linux 系统
+        if [[ "${OS_NAME}" == "linux" ]]; then
+            echo "(^・ω・^ ) 没找到标准版喵，试试 musl 版好不好喵？它功能一样哦，只是更兼容一些系统喵~"
+            MUSL_PATTERN="linux-musl-${ARCH}"
+            STANDARD_SUFFIX="${MUSL_PATTERN}.tar.gz"
+            DOWNLOAD_URL=$(echo "${RELEASE_INFO}" | jq -r --arg suffix "${STANDARD_SUFFIX}" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')
+            if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
+                TARBALL="openlist-${STANDARD_SUFFIX}"
+                TARGET_PATTERN="${MUSL_PATTERN}"
+            fi
+        fi
+        if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "Σ(っ °Д °;)っ 呜呜...人家尽力了，但还是找不到适合 (${TARGET_PATTERN}) 的下载链接喵... 对不起主人喵..." >&2
+            exit 1
+        fi
     fi
 fi
 
