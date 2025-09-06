@@ -52,7 +52,6 @@ INSTALL_DIR="/usr/local/bin" # 默认给主人安装到这里喵
 
 if [[ "${OS_NAME}" == "darwin" ]]; then
     echo "是香香的苹果电脑喵~ 正在用 Homebrew 帮主人准备需要的东西喵..."
-    # 看看 brew 在不在家喵
     if ! command -v brew &> /dev/null; then
         echo "Σ(っ °Д °;)っ 糟糕喵！主人没有安装 Homebrew，人家没法继续了喵。" >&2
         exit 1
@@ -75,7 +74,6 @@ fi
 # --- 从 API 获取下载链接 ---
 
 echo "(=^-ω-^=) 正在努力寻找最新的版本信息喵..."
-# -s 安静一点, -L 跟着跑喵
 RELEASE_INFO=$(curl -sL "${API_URL}")
 
 LATEST_TAG=$(echo "${RELEASE_INFO}" | jq -r '.tag_name')
@@ -84,18 +82,19 @@ if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
     exit 1
 fi
 
-# 拼一个文件名出来喵 (比如 "linux-amd64")
 TARGET_PATTERN="${OS_NAME}-${ARCH}"
 DOWNLOAD_URL=""
 TARBALL=""
 
 # 如果主人想要轻巧版，就先找轻巧版的喵
 if [[ "$INSTALL_LITE" == "true" ]]; then
-    LITE_SUFFIX="${TARGET_PATTERN}-lite.tar.gz"
-    DOWNLOAD_URL=$(echo "${RELEASE_INFO}" | jq -r --arg suffix "${LITE_SUFFIX}" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')
-    if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
-        TARBALL="openlist-${LITE_SUFFIX}"
-        echo "ฅ'ω'ฅ 找到主人的轻巧版下载链接了喵！"
+    LITE_PATTERN="${TARGET_PATTERN}-lite"
+    # 更智能地寻找包含关键字的压缩包喵
+    ASSET_INFO=$(echo "${RELEASE_INFO}" | jq -r --arg pattern "${LITE_PATTERN}" '.assets[] | select(.name | contains($pattern) and endswith(".tar.gz")) | "\(.browser_download_url);\(.name)"')
+    if [[ -n "$ASSET_INFO" ]]; then
+        DOWNLOAD_URL=$(echo "$ASSET_INFO" | cut -d';' -f1)
+        TARBALL=$(echo "$ASSET_INFO" | cut -d';' -f2)
+        echo "ฅ'ω'ฅ 找到主人的轻巧版了喵！就是这个 -> ${TARBALL}"
     else
         echo "(｡•́︿•̀｡) 嗯...没找到适合主人的轻巧版喵，人家试试看标准版好了喵..."
     fi
@@ -103,10 +102,11 @@ fi
 
 # 如果没找到轻巧版或者主人不需要，就下载标准版喵
 if [[ -z "$DOWNLOAD_URL" ]]; then
-    STANDARD_SUFFIX="${TARGET_PATTERN}.tar.gz"
-    DOWNLOAD_URL=$(echo "${RELEASE_INFO}" | jq -r --arg suffix "${STANDARD_SUFFIX}" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')
-    if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
-        TARBALL="openlist-${STANDARD_SUFFIX}"
+    # 这个命令会找包含 "linux-amd64" 但不包含 "lite" 的压缩包喵
+    ASSET_INFO=$(echo "${RELEASE_INFO}" | jq -r --arg pattern "${TARGET_PATTERN}" '.assets[] | select(.name | contains($pattern) and endswith(".tar.gz") and (contains("lite") | not)) | "\(.browser_download_url);\(.name)"')
+    if [[ -n "$ASSET_INFO" ]]; then
+        DOWNLOAD_URL=$(echo "$ASSET_INFO" | cut -d';' -f1)
+        TARBALL=$(echo "$ASSET_INFO" | cut -d';' -f2)
     else
         echo "Σ(っ °Д °;)っ 呜呜...找不到适合主人 (${TARGET_PATTERN}) 的任何下载链接喵..." >&2
         exit 1
