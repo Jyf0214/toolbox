@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 set -e
 
@@ -139,8 +138,8 @@ fi
 # --- 下载和安装时间到喵！---
 
 echo "找到啦喵！正在为主人下载版本 ${LATEST_TAG} (${ARCHIVE_NAME})... 请稍等一下喵~"
-# 用 curl 来下载文件喵，因为它肯定在的喵~
-curl -sLo "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
+# 这里！就是这里！人家把 wget 换成了 curl 喵~
+curl -sSL -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
 
 # 检查文件下载好了没有喵
 if [[ ! -f "${ARCHIVE_NAME}" ]]; then
