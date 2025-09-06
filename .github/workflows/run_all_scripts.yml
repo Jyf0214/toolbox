@@ -1,22 +1,18 @@
 name: 自动测试所有小脚本喵~ 🐾
 
 on:
-  # 当主人推送到 main 分支时，人家就会自动开始工作喵！
   push:
-    branches: [ "main", "master" ] # 主人的主分支叫 main 还是 master 喵？都写上好了喵~
+    branches: [ "main", "master" ]
     paths:
-      - 'scripts/**.sh' # 只有 scripts 目录里的脚本变化了才触发喵，更省力气喵~
+      - 'scripts/**.sh'
 
-  # 也给主人一个手动运行的按钮喵，想什么时候跑就什么时候跑~
   workflow_dispatch:
 
 jobs:
-  # 第一个工作：侦察兵出动！去发现所有需要运行的脚本喵
   discover-scripts:
     name: 发现所有要运行的小脚本喵 🧐
     runs-on: ubuntu-latest
     outputs:
-      # 把找到的脚本列表（JSON格式）报告给下一个工作喵
       script_matrix: ${{ steps.set-matrix.outputs.scripts }}
 
     steps:
@@ -26,30 +22,18 @@ jobs:
       - name: 看看 scripts 文件夹里都有谁喵...
         id: set-matrix
         run: |
-          # 找到所有 .sh 文件，然后把它们变成一个紧凑的 JSON 数组给小本本用喵
-          # 使用 jq -c 可以生成没有换行符的单行 JSON，这样就不会出错了喵~
           scripts=$(ls -1 scripts/*.sh 2>/dev/null | jq -R . | jq -s -c .)
           echo "发现的脚本有: $scripts 喵"
           echo "scripts=$scripts" >> $GITHUB_OUTPUT
 
-  # 第二个工作：执行官们出动！并行运行所有发现的脚本喵
   run-scripts:
-    # 需要等侦察兵工作完成才能开始喵
     needs: discover-scripts
-
-    # 如果侦察兵没找到任何脚本，这个工作就不会运行了喵
     if: needs.discover-scripts.outputs.script_matrix != '[]'
-
     name: 正在努力执行 -> ${{ matrix.script_name }} 喵! 🚀
-
-    # 一个脚本出错了，其他的也要继续加油干喵！
     continue-on-error: true
-
-    # 使用矩阵策略，为每个脚本创建一个独立的执行环境喵
     strategy:
-      fail-fast: false # 确保一个失败了，其他的不会被取消喵
+      fail-fast: false
       matrix:
-        # 从侦察兵的小本本上读取脚本列表喵
         script_name: ${{ fromJson(needs.discover-scripts.outputs.script_matrix) }}
 
     runs-on: ubuntu-latest
@@ -58,10 +42,11 @@ jobs:
       - name: 再次把主人的代码拿过来喵～
         uses: actions/checkout@v4
 
-      - name: 赋予魔法力量并开始执行喵！✨
+      - name: 赋予魔法力量并以 root 身份开始执行喵！✨
         run: |
           echo "正在给 ${{ matrix.script_name }} 注入执行的魔法力量 (chmod +x) 喵..."
           chmod +x ${{ matrix.script_name }}
           
-          echo "开始执行 ${{ matrix.script_name }} 喵！加油喵！"
-          ./${{ matrix.script_name }}
+          echo "开始使用 root 的魔法力量执行 ${{ matrix.script_name }} 喵！加油喵！"
+          # 脚本需要 root 权限，所以我们在它前面加上 sudo 喵
+          sudo ./${{ matrix.script_name }}
