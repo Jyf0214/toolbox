@@ -3,146 +3,146 @@ set -e
 
 # --- 脚本配置与变量初始化 ---
 
-# 默认安装标准版，可被命令行参数覆盖
+# 默认安装标准版，可被命令行参数覆盖喵
 INSTALL_LITE="false"
-# 接收第一个命令行参数，如果为 "lite"，则设置安装精简版
+# 接收第一个命令行参数，如果为 "lite"，就安装轻巧版喵
 if [[ "$1" == "lite" ]]; then
     INSTALL_LITE="true"
-    echo "[OpenList Updater] INFO: 已指定安装精简版 (lite version)。"
+    echo "ฅ'ω'ฅ OpenList 小助手报告喵：主人想要安装轻巧版的喵~ 安排上了喵！"
 fi
 
 API_URL="https://api.github.com/repos/OpenListTeam/OpenList/releases/latest"
 
 # --- 环境和架构检测 ---
 
-echo "[OpenList Updater] 正在检测系统与架构..."
-# 检测操作系统，并进行规范化 (darwin -> macos, linux -> linux)
+echo "킁킁... 让我闻闻主人的系统是什么味道的喵... 正在检测系统和架构喵~"
+# 检测操作系统，然后告诉人家是苹果还是小企鹅喵
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "${OS}" in
     linux)
         OS_NAME="linux"
         ;;
     darwin)
-        OS_NAME="darwin" # macOS 的内核名是 Darwin
+        OS_NAME="darwin" # 是香香的苹果电脑喵
         ;;
     *)
-        echo "[OpenList Updater] ERROR: 不支持的操作系统: ${OS}" >&2
+        echo "Σ(っ °Д °;)っ 糟糕喵！这个系统人家不认识啦喵: ${OS}" >&2
         exit 1
         ;;
 esac
 
-# 检测 CPU 架构
+# 检测 CPU 架构是什么样的喵
 ARCH=$(uname -m)
 case "${ARCH}" in
     x86_64)    ARCH="amd64" ;;
-    aarch64)   ARCH="arm64" ;; # 也适用于 Apple Silicon M-series
+    aarch64)   ARCH="arm64" ;; # Apple 的 M 芯片也算这个喵
     armv7l)    ARCH="armv7" ;;
     i386|i686) ARCH="386" ;;
     *)
-        echo "[OpenList Updater] ERROR: 不支持的 CPU 架构: ${ARCH}" >&2
+        echo "Σ(っ °Д °;)っ 呜哇！主人的这个 CPU 架构太特别了喵: ${ARCH}" >&2
         exit 1
         ;;
 esac
 
-echo "[OpenList Updater] 检测到系统: ${OS_NAME}, 架构: ${ARCH}"
+echo "喵呜~ 知道啦！主人的系统是 ${OS_NAME}, 架构是 ${ARCH} 的喵！(๑•̀ㅂ•́)و✧"
 
 # --- 环境适配与依赖安装 ---
 
-INSTALL_DIR="/usr/local/bin" # 默认安装路径
+INSTALL_DIR="/usr/local/bin" # 默认给主人安装到这里喵
 
 if [[ "${OS_NAME}" == "darwin" ]]; then
-    echo "[OpenList Updater] 检测到 macOS，使用 Homebrew 安装依赖..."
-    # 检查 brew 是否安装
+    echo "是香香的苹果电脑喵~ 正在用 Homebrew 帮主人准备需要的东西喵..."
+    # 看看 brew 在不在家喵
     if ! command -v brew &> /dev/null; then
-        echo "[OpenList Updater] ERROR: Homebrew 未安装，请先安装 Homebrew。" >&2
+        echo "Σ(っ °Д °;)っ 糟糕喵！主人没有安装 Homebrew，人家没法继续了喵。" >&2
         exit 1
     fi
     brew install jq wget file >/dev/null
 elif [[ -n "$PREFIX" ]] && [[ -d "$PREFIX/bin" ]]; then
-    echo "[OpenList Updater] 检测到 Termux (Android)，使用 pkg 安装依赖..."
+    echo "(´,,•ω•,,｀)♡ 是 Termux 喵~ 正在用 pkg 帮主人准备东西喵..."
     INSTALL_DIR="$PREFIX/bin"
     pkg install -y curl jq wget file >/dev/null
-else # 标准 Linux
+else # 标准的小企鹅系统喵
     if [[ $(id -u) -ne 0 ]]; then
-        echo "[OpenList Updater] ERROR: 在标准 Linux 环境下，此脚本必须以 root 权限运行。" >&2
+        echo "Σ(っ °Д °;)っ 糟糕喵！在小企鹅系统上，需要主人用 root 权限运行这个脚本才行喵！" >&2
         exit 1
     fi
-    echo "[OpenList Updater] 检测到标准 Linux，使用 apt-get 安装依赖..."
+    echo "是可爱的小企鹅系统喵~ 正在用 apt-get 帮主人准备东西喵..."
     cd /tmp
     apt-get update >/dev/null && apt-get install -y curl jq wget file >/dev/null
 fi
 
 # --- 从 API 获取下载链接 ---
 
-echo "[OpenList Updater] 正在获取最新的发布信息..."
-# -s 静默模式, -L 跟随重定向
+echo "(=^-ω-^=) 正在努力寻找最新的版本信息喵..."
+# -s 安静一点, -L 跟着跑喵
 RELEASE_INFO=$(curl -sL "${API_URL}")
 
 LATEST_TAG=$(echo "${RELEASE_INFO}" | jq -r '.tag_name')
 if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
-    echo "[OpenList Updater] ERROR: 无法获取最新的版本标签。" >&2
+    echo "Σ(っ °Д °;)っ 糟糕喵！找不到最新的版本标签了喵..." >&2
     exit 1
 fi
 
-# 构建文件名模式 (e.g., "linux-amd64")
+# 拼一个文件名出来喵 (比如 "linux-amd64")
 TARGET_PATTERN="${OS_NAME}-${ARCH}"
 DOWNLOAD_URL=""
 TARBALL=""
 
-# 如果用户想安装精简版，优先尝试查找 lite 版本
+# 如果主人想要轻巧版，就先找轻巧版的喵
 if [[ "$INSTALL_LITE" == "true" ]]; then
     LITE_SUFFIX="${TARGET_PATTERN}-lite.tar.gz"
     DOWNLOAD_URL=$(echo "${RELEASE_INFO}" | jq -r --arg suffix "${LITE_SUFFIX}" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')
     if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
         TARBALL="openlist-${LITE_SUFFIX}"
-        echo "[OpenList Updater] INFO: 已成功找到精简版下载链接。"
+        echo "ฅ'ω'ฅ 找到主人的轻巧版下载链接了喵！"
     else
-        echo "[OpenList Updater] WARNING: 未找到适用于您平台的精简版，将尝试下载标准版。"
+        echo "(｡•́︿•̀｡) 嗯...没找到适合主人的轻巧版喵，人家试试看标准版好了喵..."
     fi
 fi
 
-# 如果没找到精简版或者用户不需要精简版，则下载标准版
+# 如果没找到轻巧版或者主人不需要，就下载标准版喵
 if [[ -z "$DOWNLOAD_URL" ]]; then
     STANDARD_SUFFIX="${TARGET_PATTERN}.tar.gz"
     DOWNLOAD_URL=$(echo "${RELEASE_INFO}" | jq -r --arg suffix "${STANDARD_SUFFIX}" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url')
     if [[ -n "$DOWNLOAD_URL" && "$DOWNLOAD_URL" != "null" ]]; then
         TARBALL="openlist-${STANDARD_SUFFIX}"
     else
-        echo "[OpenList Updater] ERROR: 无法找到适用于您平台 (${TARGET_PATTERN}) 的任何下载链接。" >&2
+        echo "Σ(っ °Д °;)っ 呜呜...找不到适合主人 (${TARGET_PATTERN}) 的任何下载链接喵..." >&2
         exit 1
     fi
 fi
 
 # --- 下载、验证与安装 ---
 
-echo "[OpenList Updater] 正在下载版本 ${LATEST_TAG} (${TARBALL})..."
+echo "找到啦喵！正在为主人下载版本 ${LATEST_TAG} (${TARBALL})... 请稍等一下喵~"
 wget -qO "${TARBALL}" "${DOWNLOAD_URL}"
 
 FILE_TYPE=$(file -b "${TARBALL}")
 if [[ ! "${FILE_TYPE}" =~ "gzip compressed data" ]]; then
-    echo "[OpenList Updater] ERROR: 下载的文件不是有效的 gzip 压缩包。" >&2
+    echo "Σ(っ °Д °;)っ 糟糕喵！下载下来的文件好像坏掉了喵，不是一个压缩包喵..." >&2
     rm -f "${TARBALL}"
     exit 1
 fi
 
 TMP_DIR=$(mktemp -d)
-trap "rm -rf ${TMP_DIR}" EXIT # 脚本退出时自动清理临时目录
+trap "rm -rf ${TMP_DIR}" EXIT # 主人放心，人家走的时候会把这里打扫干净的喵
 
-echo "[OpenList Updater] 正在解压并安装..."
+echo "嘿咻嘿咻... 正在解压和安装喵..."
 tar -zxf "${TARBALL}" -C "${TMP_DIR}"
 
 BINARY_PATH=$(find "${TMP_DIR}" -type f -name "openlist")
 if [[ -z "${BINARY_PATH}" ]]; then
-    echo "[OpenList Updater] ERROR: 未能在压缩包中找到 'openlist' 可执行文件。" >&2
+    echo "Σ(っ °Д °;)っ 糟糕喵！压缩包里没有找到叫 'openlist' 的文件喵..." >&2
     exit 1
 fi
 
 INSTALL_PATH="${INSTALL_DIR}/openlist"
-echo "[OpenList Updater] 正在将可执行文件移动到 ${INSTALL_PATH}"
+echo "马上就好喵！正在把文件放到 ${INSTALL_PATH} 这里喵~"
 mv -f "${BINARY_PATH}" "${INSTALL_PATH}"
 chmod +x "${INSTALL_PATH}"
 
-# 清理工作
+# 打扫卫生喵
 rm -f "${TARBALL}"
 
-echo "✅ OpenList 已成功更新至 ${LATEST_TAG} (${ARCH}) 并安装到 ${INSTALL_PATH}"
+echo "✨ 搞定啦喵！OpenList 已经成功变成最新版 ${LATEST_TAG} (${ARCH}) 啦！现在它在 ${INSTALL_PATH} 安家了喵！主人快夸我喵~ (ɔˆ ³(ˆ⌣ˆc)"
