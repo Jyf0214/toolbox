@@ -34,7 +34,7 @@ chown -R appuser:appuser /opt/tunnel
 
 echo "5. Generating sync tool configurations..."
 
-# 为 rclone 生成配置
+# 为 rclone 生成配置 (保持不变，rclone 有原生 b2 支持)
 mkdir -p /home/appuser/.config/rclone
 cat << EOF > /home/appuser/.config/rclone/rclone.conf
 [b2]
@@ -45,7 +45,7 @@ endpoint = \${B2_ENDPOINT}
 EOF
 chown -R appuser:appuser /home/appuser/.config
 
-# --- 关键改动：为 Litestream 生成正确的 S3 兼容配置 ---
+# --- 关键修正：为 Litestream 生成正确的 S3 兼容配置 ---
 cat << EOF > /etc/litestream.yml
 dbs:
   - path: ${DATA_DIR}/data.db
@@ -56,8 +56,4 @@ dbs:
         endpoint: https://\${B2_ENDPOINT}
         region: \${B2_REGION}
         access-key-id: \${B2_ACCOUNT_ID}
-        secret-access-key: \${B2_ACCOUNT_KEY}
-        path-style-access: true
-EOF
-
-echo "--- [BUILD SCRIPT] Environment setup complete. ---"
+        secret-access-key: \${B2_ACCOUNT_
