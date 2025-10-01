@@ -24,6 +24,5 @@ cat << EOF > /home/appuser/.config/rclone/rclone.conf.template
 type = b2
 account = \${B2_ACCOUNT_ID}
 key = \${B2_ACCOUNT_KEY}
-endpoint = https://\${B2_ENDPOINT}
 EOF
 chown -R appuser:appuser /home/appuser/.config
