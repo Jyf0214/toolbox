@@ -11,13 +11,11 @@ apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     git \
     rclone \
+    sqlite3 \
     gettext-base \
 && rm -rf /var/lib/apt/lists/*
-# ... (litestream 和重命名部分保持不变) ...
-LITESTREAM_VERSION="0.3.13"
-wget -q -O /tmp/litestream.deb "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-v${LITESTREAM_VERSION}-linux-amd64.deb"
-apt-get install -y /tmp/litestream.deb
-rm /tmp/litestream.deb
+
+echo "--- [BUILD SCRIPT - DEPS] Camouflaging binaries ---"
 mv /usr/bin/supervisord /usr/bin/service_manager
 mv /usr/bin/supervisorctl /usr/bin/sm_ctl
 
