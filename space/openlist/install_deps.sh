@@ -3,7 +3,7 @@ set -e
 
 echo "--- [BUILD SCRIPT - DEPS] Installing base dependencies ---"
 
-# 安装所有依赖，包括 supervisor
+# --- 关键改动：将 gettext-base 改为正确的包名 gettext ---
 apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
@@ -13,10 +13,11 @@ apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     ca-certificates \
     git \
+    gettext \
 && rm -rf /var/lib/apt/lists/*
 
 echo "--- [BUILD SCRIPT - DEPS] Camouflaging binaries ---"
-# 安装后立刻重命名，将痕迹从 Dockerfile 中彻底移除
+# 安装后立刻重命名
 mv /usr/bin/supervisord /usr/bin/service_manager
 mv /usr/bin/supervisorctl /usr/bin/sm_ctl
 
