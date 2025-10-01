@@ -11,7 +11,7 @@
     "user": "${DB_USER}",
     "password": "${DB_PASS}",
     "name": "${DB_NAME}",
-    "db_file": "data/data.db",
+    "db_file": "",
     "table_prefix": "x_",
     "ssl_mode": "require",
     "dsn": ""
