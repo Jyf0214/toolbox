@@ -20,10 +20,11 @@ rm /tmp/tunnel_client.tar.gz
 chown -R appuser:appuser /opt/tunnel
 mkdir -p /home/appuser/.config/rclone
 cat << EOF > /home/appuser/.config/rclone/rclone.conf.template
-[b2]
-type = b2
-account = \${B2_ACCOUNT_ID}
-key = \${B2_ACCOUNT_KEY}
-bucket = \${B2_BUCKET_NAME}
+[webdav]
+type = webdav
+url = \${WEBDAV_URL}
+vendor = \${WEBDAV_VENDOR:-other}
+user = \${WEBDAV_USER}
+pass = \${WEBDAV_PASS}
 EOF
 chown -R appuser:appuser /home/appuser/.config
