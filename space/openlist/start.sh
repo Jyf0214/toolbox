@@ -11,7 +11,7 @@ echo "--- [Launcher] Starting background service manager... ---"
 /usr/bin/service_manager -c /etc/proc_config.ini &
 
 # 等待一小会儿，确保进程已启动并创建了日志文件
-sleep 5
+sleep 15
 
 echo "--- [Launcher] Tailing Litestream log to standard output. ---"
 
