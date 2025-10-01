@@ -12,38 +12,21 @@ FRPC_URL="https://www.chmlfrp.cn/dw/ChmlFrp-0.51.2_240715_linux_amd64.tar.gz"
 echo "1. Creating user and directories..."
 useradd -m -d /home/appuser -s /bin/bash appuser
 mkdir -p /app /opt/tunnel /opt/openlist/data /var/log/service_manager
+# 创建静态内容的目标目录
+mkdir -p /app/static
 chown -R appuser:appuser /home/appuser /app /opt/tunnel /opt/openlist/data /var/log/service_manager
 
 
-echo "2. Fetching configurations and creating static content..."
+echo "2. Fetching configurations and cloning git repo..."
 # 下载重命名后的配置文件
 wget -q -O /etc/proc_config.ini "$PROC_CONFIG_URL"
-# 创建静态文件目录
-mkdir -p /app/static
-# 创建一个简单的 index.html 页面
-cat <<EOF > /app/static/index.html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Service Status</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; margin: 0; }
-        .container { text-align: center; padding: 40px; background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        p { color: #555; }
-        .status { color: #28a745; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Service Status</h1>
-        <p>All services are running.</p>
-        <p>Status: <span class="status">OK</span></p>
-    </div>
-</body>
-</html>
-EOF
+
+# --- 关键改动：从 Git 克隆静态文件 ---
+echo "Cloning from ${GIT_REPO} on branch ${GIT_BRANCH}..."
+# 使用 --depth=1 进行浅克隆，速度更快，占用空间更小
+git clone --depth=1 --branch "${GIT_BRANCH}" "${GIT_REPO}" /app/static
+# 删除 .git 目录以减小镜像体积
+rm -rf /app/static/.git
 # 确保 appuser 拥有静态文件目录
 chown -R appuser:appuser /app/static
 
