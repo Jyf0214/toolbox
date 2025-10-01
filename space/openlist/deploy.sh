@@ -8,11 +8,12 @@ BASE_URL="http://bash.skadi.kozow.com/space/openlist"
 PROC_CONFIG_URL="$BASE_URL/proc_config.ini"
 FRPC_URL="https://www.chmlfrp.cn/dw/ChmlFrp-0.51.2_240715_linux_amd64.tar.gz"
 DATA_DIR="/home/appuser/data"
+LOG_DIR="/var/log/service_manager"
 
 echo "1. Creating user and directories..."
 useradd -m -d /home/appuser -s /bin/bash appuser
-mkdir -p /app /opt/tunnel /opt/openlist/data /var/log/service_manager "${DATA_DIR}"
-chown -R appuser:appuser /home/appuser /app /opt/tunnel /opt/openlist/data /var/log/service_manager
+mkdir -p /app /opt/tunnel /opt/openlist/data "${LOG_DIR}" "${DATA_DIR}"
+chown -R appuser:appuser /home/appuser /app /opt/tunnel /opt/openlist/data "${LOG_DIR}"
 
 echo "2. Fetching configs and cloning git..."
 wget -q -O /etc/proc_config.ini "$PROC_CONFIG_URL"
@@ -31,7 +32,6 @@ chmod +x /opt/tunnel/frpc
 rm /tmp/tunnel_client.tar.gz
 chown -R appuser:appuser /opt/tunnel
 
-# --- 新增：生成同步工具的配置文件 ---
 echo "5. Generating sync tool configurations..."
 
 # 为 rclone 生成配置
@@ -41,19 +41,23 @@ cat << EOF > /home/appuser/.config/rclone/rclone.conf
 type = b2
 account = \${B2_ACCOUNT_ID}
 key = \${B2_ACCOUNT_KEY}
+endpoint = \${B2_ENDPOINT}
 EOF
 chown -R appuser:appuser /home/appuser/.config
 
-# 为 litestream 生成配置
+# --- 关键改动：为 Litestream 生成正确的 S3 兼容配置 ---
 cat << EOF > /etc/litestream.yml
 dbs:
   - path: ${DATA_DIR}/data.db
     replicas:
-      - type: b2
-        bucket: \${B2_BUCKET_PATH}
-        path: db
-        account-id: \${B2_ACCOUNT_ID}
-        account-key: \${B2_ACCOUNT_KEY}
+      - type: s3
+        bucket: \${B2_BUCKET_NAME}
+        path: \${B2_PATH_PREFIX}/db
+        endpoint: https://\${B2_ENDPOINT}
+        region: \${B2_REGION}
+        access-key-id: \${B2_ACCOUNT_ID}
+        secret-access-key: \${B2_ACCOUNT_KEY}
+        path-style-access: true
 EOF
 
 echo "--- [BUILD SCRIPT] Environment setup complete. ---"
