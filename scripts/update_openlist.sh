@@ -77,13 +77,32 @@ fi
 
 # --- 努力帮主人寻找最新的下载链接喵 ---
 
-echo "(=^-ω-^=) 正在努力连接 GitHub 星球，寻找最新的版本信息喵..."
-# -s 安静一点, -L 跟着跑喵~
-RELEASE_INFO=$(curl -sL "${API_URL}")
+echo "(=^-ω-^=) 正在努力连接 GitHub 星球，寻找最新的版本信息喵...（人家会努力3次哦喵！）"
+
+RELEASE_INFO=""
+# 增加重试机制，一共试3次
+for i in {1..3}; do
+    # -s 安静一点, -L 跟着跑喵~, --connect-timeout 15 设置连接超时喵~
+    RELEASE_INFO=$(curl -sL --connect-timeout 15 "${API_URL}")
+    
+    # 检查一下是不是成功拿到信息了喵
+    if [[ -n "$RELEASE_INFO" ]] && echo "${RELEASE_INFO}" | jq -e '.tag_name' >/dev/null; then
+        echo "o(=•ェ•=)m 第 ${i} 次尝试就成功啦喵！"
+        break
+    fi
+    
+    # 如果是最后一次尝试，就不再提示等待了喵
+    if [[ "$i" -lt 3 ]]; then
+      echo "(｡•́︿•̀｡) 第 ${i} 次尝试失败了喵... 等 5 秒钟再试试喵..."
+      sleep 5
+    fi
+done
 
 LATEST_TAG=$(echo "${RELEASE_INFO}" | jq -r '.tag_name')
 if [[ -z "$LATEST_TAG" || "$LATEST_TAG" == "null" ]]; then
-    echo "Σ(っ °Д °;)っ 呜呜...获取版本标签失败了喵...是不是网络不好喵？" >&2
+    echo "Σ(っ °Д °;)っ 呜呜...试了好几次都获取不到版本标签喵...是不是网络不好喵？" >&2
+    echo "人家从 GitHub 星球拿到的信息是这样子的喵：" >&2
+    echo "${RELEASE_INFO}" >&2
     exit 1
 fi
 
@@ -150,7 +169,8 @@ fi
 
 # 非 Windows 系统（Linux/Darwin）：继续自动下载（用 curl 替代原 wget，避免依赖问题）
 echo "正在为主人自动下载，请稍等一下喵~"
-curl -sL -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
+# 这里也加上超时，避免下载大文件时卡住太久喵
+curl -sL --connect-timeout 15 -o "${ARCHIVE_NAME}" "${DOWNLOAD_URL}"
 
 # 检查文件下载好了没有喵
 if [[ ! -f "${ARCHIVE_NAME}" ]]; then
